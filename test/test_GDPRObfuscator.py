@@ -5,6 +5,7 @@ import boto3
 from unittest.mock import Mock, patch, MagicMock
 from moto import mock_aws
 import os
+from io import StringIO
 
 """
 handle data in CSV
@@ -62,3 +63,13 @@ class TestGetFile:
             file_name=test_key_name,
             client=mock_s3_client)
         assert result == "testing"
+
+class TestObfuscateData:
+    def test_obfuscate_small(self):
+        test_csv_string = "student_id,name,course,cohort,graduation_date,email_address\n1234,'John Smith','Software',,'2024-03-31','j.smith@email.com'"
+        df = pd.read_csv(StringIO(test_csv_string))
+        fields_to_obfuscate = ["name","email_address"]
+        assert produce_obfuscated_data(
+            df=df, 
+            pii_fields= fields_to_obfuscate
+            ) == "student_id,name,course,cohort,graduation_date,email_address\n1234,'***','Software',,'2024-03-31','***'"

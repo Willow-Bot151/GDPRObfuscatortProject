@@ -60,4 +60,5 @@ def get_bucket_and_key_strings(file_path):
         key_name += "/" + ele
     return {"bucket_name":bucket_name, "key_name":key_name}
     
-    
+def produce_obfuscated_data(df, pii_fields):
+    df.loc[df[pii_fields]]
