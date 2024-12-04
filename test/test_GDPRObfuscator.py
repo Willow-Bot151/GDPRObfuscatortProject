@@ -58,6 +58,7 @@ class TestGetFile:
             Body=json.dumps("testing"),
         )
         result = get_file_from_bucket(
-            path=f"s3://{test_bucket_name}/{test_key_name}",
+            bucket_name=test_bucket_name,
+            file_name=test_key_name,
             client=mock_s3_client)
         assert result == "testing"

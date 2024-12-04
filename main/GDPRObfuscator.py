@@ -33,7 +33,7 @@ def init_s3_client():
     except Exception:
         raise ConnectionRefusedError("Failed to connect to s3 client")
 
-def get_file_from_bucket(path, client):
+def get_file_from_bucket(bucket_name, file_name, client):
     """
     Gets specified file from bucket.
 
@@ -44,10 +44,9 @@ def get_file_from_bucket(path, client):
             Returns:
                     The target file csv.
     """
-    path_information = get_bucket_and_key_strings(file_path=path)
     response = client.get_object(
-        Bucket=path_information["bucket_name"], 
-        Key=path_information["key_name"])
+        Bucket=bucket_name, 
+        Key=file_name)
     body = response["Body"].read()
     file = json.loads(body.decode("utf-8"))
     return file
