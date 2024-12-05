@@ -94,3 +94,36 @@ class TestCreateTestBucket:
         )
         body = response["Body"].read()
         assert json.loads(body.decode("utf-8")) == test_data_string
+
+class TestConvertFormatToDF:
+    def test_returns_valid_df(self):
+        pass
+    def test_csv_to_df(self):
+        pass
+    def test_parquet_to_df(self):
+        pass
+    def test_json_to_df(self):
+        pass
+    def test_invalid_format_returns_error(self):
+        pass
+
+class TestFormatValidator:
+    def test_identify_csv(self):
+        pass
+    def test_identify_parquet(self):
+        pass
+    def test_identify_json(self):
+        pass
+    def test_invalid_format_errors(self):
+        pass
+
+class TestConvertDfToFormattedString:
+    def test_to_csv(self):
+        pass
+    def test_to_parquet(self):
+        pass
+    def test_to_json(self):
+        pass
+    def test_invalid_df_raises_exception(self):
+        pass
+

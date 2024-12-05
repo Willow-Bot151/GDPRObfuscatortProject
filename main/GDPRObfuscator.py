@@ -48,7 +48,6 @@ def get_file_from_bucket(bucket_name, file_name, client):
     file = json.loads(body.decode("utf-8"))
     return file
 
-
 def get_bucket_and_key_strings(file_path):
     path_elements = file_path.split('/')
     bucket_name = path_elements[2]
@@ -89,3 +88,49 @@ def create_bucket(bucket_name,data_dict,client):
             Key = k,
             Body = json.dumps(data_dict[k])
         )
+
+def convert_format_to_df(formatted_string,format):
+    """
+    This function will convert a json, csv, or parquet format string to a dataframe.
+
+    Parameters:
+        - formatted_string
+            A string in csv, json or parquet format.
+            An expression of a data table.
+        - format
+            "csv", "json" or "parquet"
+            The format of the string.
+    Returns:
+        - A pandas dataframe containing the dataset from the input data table.
+    """
+    pass
+
+def format_validator(formatted_string):
+    """
+    This function will identify the format convention of a string representing a dataset.
+    It will work if the format is valid csv, json or parquet.
+
+    Parameters:
+        - formatted_string
+            A string formatted with csv, json, or parquet.
+    Return:
+        - A string representing the format of the input formatted string.
+        - Will be "csv", "json" or "parquet"
+    """
+    pass
+
+def convert_df_to_formatted_string(df,format):
+    """
+    This function will convert a dataframe to a string of a desired format.
+
+    Parameters:
+        - df
+            A dataframe of the dataset to convert into a formatted string.
+        - format
+            The desired format of the string.
+            Must be "csv", "json" or "parquet"
+
+    Returns:
+        - A formatted string convertion of the dataframe. 
+    """
+    pass
