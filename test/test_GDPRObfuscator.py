@@ -37,7 +37,6 @@ def test_json_input():
 def test_returns_csv():
     test_input = '{"file_to_obfuscate": "s3://my_ingestion_bucket/new_data/file1.csv","pii_fields": ["name", "email_address"]}'
     output =  Obfuscator(test_input)
-    print(output)
 
 class TestGetFile:
     def test_file_path_information_extracted_correctly(self):
@@ -69,7 +68,29 @@ class TestObfuscateData:
         test_csv_string = "student_id,name,course,cohort,graduation_date,email_address\n1234,'John Smith','Software',,'2024-03-31','j.smith@email.com'"
         df = pd.read_csv(StringIO(test_csv_string))
         fields_to_obfuscate = ["name","email_address"]
-        assert produce_obfuscated_data(
+        result =  produce_obfuscated_data(
             df=df, 
             pii_fields= fields_to_obfuscate
-            ) == "student_id,name,course,cohort,graduation_date,email_address\n1234,'***','Software',,'2024-03-31','***'"
+            )
+        assert result.to_csv(
+            path_or_buf=None,
+            sep=',',
+            header=True,
+            index=False
+            ).strip() == "student_id,name,course,cohort,graduation_date,email_address\n1234,'***','Software',,'2024-03-31','***'"
+
+class TestCreateTestBucket:
+    def test_create_test_bucket_function_makes_bucket_with_correct_test_data(self,mock_s3_client):
+        bucket_name = "testing_bucket"
+        test_data_string = "student_id,name,course,cohort,graduation_date,email_address\n1234,'John Smith','Software',,'2024-03-31','j.smith@email.com'"
+        test_file_name = "testing_file.csv"
+        create_bucket(
+            bucket_name=bucket_name,
+            data_dict={test_file_name:test_data_string},
+            client=mock_s3_client)
+        response = mock_s3_client.get_object(
+            Bucket=bucket_name,
+            Key=test_file_name
+        )
+        body = response["Body"].read()
+        assert json.loads(body.decode("utf-8")) == test_data_string
