@@ -97,15 +97,104 @@ class TestCreateTestBucket:
 
 class TestConvertFormatToDF:
     def test_returns_valid_df(self):
-        pass
+        test_input_string = "name,DoB,fav_colour\nbob,1/1/4000,maroon"
+        format = "csv"
+        assert isinstance(
+            convert_format_to_df(
+                formatted_string=test_input_string,
+                format=format
+            ),
+            pd.DataFrame
+        ) 
     def test_csv_to_df(self):
-        pass
+        test_input_string = "name,DoB,fav_colour\nbob,1/1/4000,maroon"
+        format = "csv"
+        csvStringIO = StringIO(test_input_string)
+        expected = pd.read_csv(csvStringIO,sep=',',header=None)
+        pd.testing.assert_frame_equal(
+            convert_format_to_df(
+            formatted_string=test_input_string,
+            format=format
+            ),
+            expected,
+            check_dtype=True
+        ) 
     def test_parquet_to_df(self):
-        pass
+        test_input_string = """
+        {
+            name: {
+                0: Bob,
+                1: Steve
+            },
+            DoB: {
+                0: 1/1/4000,
+                1: 2/14/0006
+            },
+            fav_colour: {
+                0: maroon,
+                1: cheese
+            }
+        }
+        """
+        format = "parquet"
+        expected = pd.DataFrame({
+            "name": ["Bob","Steve"],
+            "DoB": ["1/1/4000","2/14/0006"],
+            "fav_colour": ["maroon","cheese"]
+        })
+        pd.testing.assert_frame_equal(
+            convert_format_to_df(
+                formatted_string=test_input_string,
+                format=format
+            ),
+            expected,
+            check_dtype=True
+        ) 
     def test_json_to_df(self):
-        pass
-    def test_invalid_format_returns_error(self):
-        pass
+        test_input_string = """
+        {
+            0: {
+                "name":  "Bob",
+                "DoB":   "1/1/4000",
+                "fav_colour": "maroon"
+            },
+            1: {
+                "name": "Steve",
+                "DoB": "2/14/0006",
+                "fav_colour": "cheese"
+            }
+        }
+        """
+        format = "json"
+        expected = pd.DataFrame({
+            "name": ["Bob","Steve"],
+            "DoB": ["1/1/4000","2/14/0006"],
+            "fav_colour": ["maroon","cheese"]
+        })
+        pd.testing.assert_frame_equal(
+            convert_format_to_df(
+                formatted_string=test_input_string,
+                format=format
+            ),
+            expected,
+            check_dtype=True
+        ) 
+    def test_invalid_formatted_string_returns_error(self):
+        test_input_string = "testing"
+        formats = ["csv","json","parquet"]
+        for format in formats:
+            with pytest.raises(ValueError):
+                convert_format_to_df(
+                    formatted_string=test_input_string,
+                    format=format)
+    def test_handle_invalid_format(self):
+        test_fake_format = "cheese"
+        test_input_string = "name,DoB,fav_colour\nbob,1/1/4000,maroon"
+        with pytest.raises(ValueError):
+            convert_format_to_df(
+                formatted_string=test_input_string,
+                format=test_fake_format
+            )
 
 class TestFormatValidator:
     def test_identify_csv(self):

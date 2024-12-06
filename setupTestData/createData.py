@@ -72,3 +72,6 @@ random_test_data = {
 df = pd.DataFrame.from_dict(random_test_data)
 
 df.to_csv(path_or_buf='temp/test_data_csv')
+
+s3_client = boto3.client('s3')
+s3_client.create_bucket(Bucket='testDataBucket')

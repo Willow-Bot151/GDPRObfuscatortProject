@@ -1,6 +1,7 @@
 import json
 import pandas as pd
 import botocore
+from io import StringIO
 
 def Obfuscator(JSON_string):
     input_info = json.loads(JSON_string)
@@ -103,7 +104,26 @@ def convert_format_to_df(formatted_string,format):
     Returns:
         - A pandas dataframe containing the dataset from the input data table.
     """
-    pass
+    if format == "csv":
+        try:
+            csv_string = StringIO(formatted_string)
+            df = pd.read_csv(csv_string,sep=',',header=None)
+            return df
+        except  as e:
+            raise Exception("failed to convert csv string to dataframe, please ensure string is valid csv.") from e
+
+    elif format == "json":
+        try:
+            pass
+        except:
+            pass
+    elif format == "parquet":
+        try:
+            pass
+        except:
+            pass
+    else:
+        raise ValueError("format arguement is invalid, format can be \"csv\",\"json\" or \"parquet\"")
 
 def format_validator(formatted_string):
     """
