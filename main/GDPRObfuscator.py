@@ -109,7 +109,7 @@ def convert_format_to_df(formatted_string,format):
             csv_string = StringIO(formatted_string)
             df = pd.read_csv(csv_string,sep=',',header=None)
             return df
-        except  as e:
+        except Exception as e:
             raise Exception("failed to convert csv string to dataframe, please ensure string is valid csv.") from e
 
     elif format == "json":
