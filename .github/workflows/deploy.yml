@@ -3,7 +3,7 @@ name: CICD_workflow
 on:
   push:
     branches:
-      - test
+      - main
 
 jobs:
   run-tests: 
