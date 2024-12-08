@@ -1,7 +1,7 @@
 import json
 import pandas as pd
 import botocore
-from io import StringIO
+from io import StringIO, BytesIO
 
 
 def Obfuscator(JSON_string):
@@ -92,7 +92,7 @@ def create_bucket(bucket_name, data_dict, client):
         client.put_object(Bucket=bucket_name, Key=k, Body=json.dumps(data_dict[k]))
 
 
-def convert_format_to_df(formatted_string, format):
+def convert_format_to_df(file, format):
     """
     This function will convert a json, csv, or parquet format string to a dataframe.
 
@@ -108,7 +108,7 @@ def convert_format_to_df(formatted_string, format):
     """
     if format == "csv":
         try:
-            csv_string = StringIO(formatted_string)
+            csv_string = StringIO(file)
             df = pd.read_csv(csv_string, sep=",", header=None)
             return df
         except Exception as e:
@@ -123,8 +123,10 @@ def convert_format_to_df(formatted_string, format):
             pass
     elif format == "parquet":
         try:
-            pass
-        except:
+            parquet_bytestream =  BytesIO(file)
+            df = pd.read_parquet(parquet_bytestream)
+            return df
+        except :
             pass
     else:
         raise ValueError(

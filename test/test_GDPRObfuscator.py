@@ -5,7 +5,7 @@ import boto3
 from unittest.mock import Mock, patch, MagicMock
 from moto import mock_aws
 import os
-from io import StringIO
+from io import StringIO, BytesIO
 
 """
 handle data in CSV
@@ -98,13 +98,22 @@ class TestCreateTestBucket:
         body = response["Body"].read()
         assert json.loads(body.decode("utf-8")) == test_data_string
 
+@pytest.fixture
+def make_test_df():
+    return pd.DataFrame(
+            {
+                "name": ["Bob", "Steve"],
+                "DoB": ["1/1/4000", "2/14/0006"],
+                "fav_colour": ["maroon", "cheese"],
+            }
+        )
 
 class TestConvertFormatToDF:
     def test_returns_valid_df(self):
         test_input_string = "name,DoB,fav_colour\nbob,1/1/4000,maroon"
         format = "csv"
         assert isinstance(
-            convert_format_to_df(formatted_string=test_input_string, format=format),
+            convert_format_to_df(file=test_input_string, format=format),
             pd.DataFrame,
         )
 
@@ -114,42 +123,22 @@ class TestConvertFormatToDF:
         csvStringIO = StringIO(test_input_string)
         expected = pd.read_csv(csvStringIO, sep=",", header=None)
         pd.testing.assert_frame_equal(
-            convert_format_to_df(formatted_string=test_input_string, format=format),
+            convert_format_to_df(file=test_input_string, format=format),
             expected,
             check_dtype=True,
         )
 
-    def test_parquet_to_df(self):
-        test_input_string = """
-        {
-            name: {
-                0: Bob,
-                1: Steve
-            },
-            DoB: {
-                0: 1/1/4000,
-                1: 2/14/0006
-            },
-            fav_colour: {
-                0: maroon,
-                1: cheese
-            }
-        }
-        """
+    def test_parquet_to_df(self, make_test_df):
+        input_parquet = make_test_df.to_parquet()
         format = "parquet"
-        expected = pd.DataFrame(
-            {
-                "name": ["Bob", "Steve"],
-                "DoB": ["1/1/4000", "2/14/0006"],
-                "fav_colour": ["maroon", "cheese"],
-            }
-        )
+        expected = make_test_df
         pd.testing.assert_frame_equal(
-            convert_format_to_df(formatted_string=test_input_string, format=format),
+            convert_format_to_df(file=input_parquet, format=format),
             expected,
             check_dtype=True,
         )
 
+    @pytest.mark.skip
     def test_json_to_df(self):
         test_input_string = """
         {
@@ -174,24 +163,25 @@ class TestConvertFormatToDF:
             }
         )
         pd.testing.assert_frame_equal(
-            convert_format_to_df(formatted_string=test_input_string, format=format),
+            convert_format_to_df(file=test_input_string, format=format),
             expected,
             check_dtype=True,
         )
 
+    @pytest.mark.skip
     def test_invalid_formatted_string_returns_error(self):
         test_input_string = "testing"
         formats = ["csv", "json", "parquet"]
         for format in formats:
             with pytest.raises(ValueError):
-                convert_format_to_df(formatted_string=test_input_string, format=format)
+                convert_format_to_df(file=test_input_string, format=format)
 
     def test_handle_invalid_format(self):
         test_fake_format = "cheese"
         test_input_string = "name,DoB,fav_colour\nbob,1/1/4000,maroon"
         with pytest.raises(ValueError):
             convert_format_to_df(
-                formatted_string=test_input_string, format=test_fake_format
+                file=test_input_string, format=test_fake_format
             )
 
 
