@@ -65,12 +65,12 @@ dev-setup: bandit safety black coverage
 # Issue with Jinja2, ignored for the sake of example project but should be fixed in reality.
 security-test:
 	$(call execute_in_env, safety check -r requirements.txt || true)
-	$(call execute_in_env, bandit -lll */*.py *c/*/*.py)
+	$(call execute_in_env, bandit -lll */*.py)
 
 ## Run the black code check
 run-black:
-	$(call execute_in_env, find ./test/test_GDPRObfuscator -name '*.py' -exec black {} +)
-	$(call execute_in_env, find ./main/GDPRObfuscator -name '*.py' -exec black {} +)
+	$(call execute_in_env, find ./test/ -name '*.py' -exec black {} +)
+	$(call execute_in_env, find ./main/ -name '*.py' -exec black {} +)
 
 ## Run the unit tests
 unit-test:

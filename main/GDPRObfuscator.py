@@ -3,15 +3,20 @@ import pandas as pd
 import botocore
 from io import StringIO
 
+
 def Obfuscator(JSON_string):
     input_info = json.loads(JSON_string)
-    target_file_path, fields_to_obfuscate = input_info["file_to_obfuscate"], input_info['pii_fields']
+    target_file_path, fields_to_obfuscate = (
+        input_info["file_to_obfuscate"],
+        input_info["pii_fields"],
+    )
     ## retrieve target file with boto3
     client = init_s3_client()
     get_bucket_and_key_strings(target_file_path)
     csv_file_path = "temp/customers-100.csv"
     df = pd.read_csv(csv_file_path)
     return df.to_csv()
+
 
 def init_s3_client():
     """
@@ -31,6 +36,7 @@ def init_s3_client():
     except Exception:
         raise ConnectionRefusedError("Failed to connect to s3 client")
 
+
 def get_file_from_bucket(bucket_name, file_name, client):
     """
     Gets specified file from bucket.
@@ -42,34 +48,35 @@ def get_file_from_bucket(bucket_name, file_name, client):
             Returns:
                     The target file csv.
     """
-    response = client.get_object(
-        Bucket=bucket_name, 
-        Key=file_name)
+    response = client.get_object(Bucket=bucket_name, Key=file_name)
     body = response["Body"].read()
     file = json.loads(body.decode("utf-8"))
     return file
 
+
 def get_bucket_and_key_strings(file_path):
-    path_elements = file_path.split('/')
+    path_elements = file_path.split("/")
     bucket_name = path_elements[2]
     key_name = ""
     for ele in path_elements[3:]:
         key_name += "/" + ele
-    return {"bucket_name":bucket_name, "key_name":key_name}
-    
+    return {"bucket_name": bucket_name, "key_name": key_name}
+
+
 def produce_obfuscated_data(df, pii_fields):
     new_df = df.copy()
     new_df[pii_fields] = "'***'"
     return new_df
 
-def create_bucket(bucket_name,data_dict,client):
+
+def create_bucket(bucket_name, data_dict, client):
     """
     This function creates an s3 bucket.
 
     Parameters:
-        - test_bucket_name 
+        - test_bucket_name
             Name of bucket to be created.
-        - test_data_string_dict 
+        - test_data_string_dict
             Dictionary of test data,.
             The key of each element should be the file name of the data set.
             The data should be in CSV string, JSON string, or Parquet string format.
@@ -77,20 +84,15 @@ def create_bucket(bucket_name,data_dict,client):
         - None
     """
     client.create_bucket(
-        Bucket = bucket_name,
-        CreateBucketConfiguration={
-            "LocationConstraint":"eu-west-2"
-        }
+        Bucket=bucket_name,
+        CreateBucketConfiguration={"LocationConstraint": "eu-west-2"},
     )
     print(data_dict)
     for k in data_dict:
-        client.put_object(
-            Bucket = bucket_name,
-            Key = k,
-            Body = json.dumps(data_dict[k])
-        )
+        client.put_object(Bucket=bucket_name, Key=k, Body=json.dumps(data_dict[k]))
 
-def convert_format_to_df(formatted_string,format):
+
+def convert_format_to_df(formatted_string, format):
     """
     This function will convert a json, csv, or parquet format string to a dataframe.
 
@@ -107,10 +109,12 @@ def convert_format_to_df(formatted_string,format):
     if format == "csv":
         try:
             csv_string = StringIO(formatted_string)
-            df = pd.read_csv(csv_string,sep=',',header=None)
+            df = pd.read_csv(csv_string, sep=",", header=None)
             return df
         except Exception as e:
-            raise Exception("failed to convert csv string to dataframe, please ensure string is valid csv.") from e
+            raise Exception(
+                "failed to convert csv string to dataframe, please ensure string is valid csv."
+            ) from e
 
     elif format == "json":
         try:
@@ -123,7 +127,10 @@ def convert_format_to_df(formatted_string,format):
         except:
             pass
     else:
-        raise ValueError("format arguement is invalid, format can be \"csv\",\"json\" or \"parquet\"")
+        raise ValueError(
+            'format arguement is invalid, format can be "csv","json" or "parquet"'
+        )
+
 
 def format_validator(formatted_string):
     """
@@ -139,7 +146,8 @@ def format_validator(formatted_string):
     """
     pass
 
-def convert_df_to_formatted_string(df,format):
+
+def convert_df_to_formatted_string(df, format):
     """
     This function will convert a dataframe to a string of a desired format.
 
@@ -151,7 +159,7 @@ def convert_df_to_formatted_string(df,format):
             Must be "csv", "json" or "parquet"
 
     Returns:
-        - A formatted string convertion of the dataframe. 
+        - A formatted string convertion of the dataframe.
     """
     pass
     print("hi")
