@@ -109,80 +109,47 @@ def make_test_df():
         )
 
 class TestConvertFormatToDF:
-    def test_returns_valid_df(self):
-        test_input_string = "name,DoB,fav_colour\nbob,1/1/4000,maroon"
-        format = "csv"
-        assert isinstance(
-            convert_format_to_df(file=test_input_string, format=format),
-            pd.DataFrame,
-        )
-
     def test_csv_to_df(self):
         test_input_string = "name,DoB,fav_colour\nbob,1/1/4000,maroon"
-        format = "csv"
         csvStringIO = StringIO(test_input_string)
         expected = pd.read_csv(csvStringIO, sep=",", header=None)
         pd.testing.assert_frame_equal(
-            convert_format_to_df(file=test_input_string, format=format),
+            convert_csv_to_df(file=test_input_string),
             expected,
             check_dtype=True,
         )
 
     def test_parquet_to_df(self, make_test_df):
         input_parquet = make_test_df.to_parquet()
-        format = "parquet"
         expected = make_test_df
         pd.testing.assert_frame_equal(
-            convert_format_to_df(file=input_parquet, format=format),
+            convert_parquet_to_df(file=input_parquet),
             expected,
             check_dtype=True,
         )
 
-    @pytest.mark.skip
-    def test_json_to_df(self):
-        test_input_string = """
-        {
-            0: {
-                "name":  "Bob",
-                "DoB":   "1/1/4000",
-                "fav_colour": "maroon"
-            },
-            1: {
-                "name": "Steve",
-                "DoB": "2/14/0006",
-                "fav_colour": "cheese"
-            }
-        }
-        """
-        format = "json"
-        expected = pd.DataFrame(
-            {
-                "name": ["Bob", "Steve"],
-                "DoB": ["1/1/4000", "2/14/0006"],
-                "fav_colour": ["maroon", "cheese"],
-            }
-        )
+    def test_json_to_df(self,make_test_df):
+        input_json = make_test_df.to_json()
+        expected = make_test_df
         pd.testing.assert_frame_equal(
-            convert_format_to_df(file=test_input_string, format=format),
+            convert_json_to_df(file=input_json),
             expected,
             check_dtype=True,
         )
 
-    @pytest.mark.skip
-    def test_invalid_formatted_string_returns_error(self):
-        test_input_string = "testing"
-        formats = ["csv", "json", "parquet"]
-        for format in formats:
-            with pytest.raises(ValueError):
-                convert_format_to_df(file=test_input_string, format=format)
-
-    def test_handle_invalid_format(self):
-        test_fake_format = "cheese"
-        test_input_string = "name,DoB,fav_colour\nbob,1/1/4000,maroon"
+    def test_invalid_csv_or_json_formatted_string_raises_error(self):
+        test_input_string = """cnhuedsfbuiewfbaflb@::{D1&"&$^$^!£}"""
+        print(convert_csv_to_df(file=test_input_string))
         with pytest.raises(ValueError):
-            convert_format_to_df(
-                file=test_input_string, format=test_fake_format
-            )
+            convert_csv_to_df(file=test_input_string)
+        with pytest.raises(ValueError):
+            convert_json_to_df(test_input_string)
+
+    def test_invalid_parquet_format_raises_error(self):
+        test_input_string = """cnhuedsfbuiewfbaflb@::{D1&"&$^$^!£}"""
+        test_input_bytestream = test_input_string.encode('utf-8')
+        with pytest.raises(ValueError):
+            convert_parquet_to_df(test_input_bytestream)
 
 
 class TestFormatValidator:
@@ -200,14 +167,44 @@ class TestFormatValidator:
 
 
 class TestConvertDfToFormattedString:
-    def test_to_csv(self):
-        pass
+    def test_to_csv_correct(self,make_test_df):
+        test_input = make_test_df
+        expected = make_test_df.to_csv()
+        assert convert_df_to_csv(test_input) == expected
+    def test_to_csv_non_mutation(self,make_test_df):
+        test_input = make_test_df.copy()
+        convert_df_to_csv(test_input)
+        pd.testing.assert_frame_equal(
+            test_input,
+            make_test_df,
+            check_dtype=True
+        )
 
-    def test_to_parquet(self):
-        pass
+    def test_to_parquet_correct(self,make_test_df):
+        test_input = make_test_df
+        expected = make_test_df.to_parquet()
+        assert convert_df_to_parquet(test_input) == expected
+    def test_to_parquet_non_mutation(self,make_test_df):
+        test_input = make_test_df.copy()
+        convert_df_to_parquet(test_input)
+        pd.testing.assert_frame_equal(
+            test_input,
+            make_test_df,
+            check_dtype=True
+        )
 
-    def test_to_json(self):
-        pass
+    def test_to_json_correct(self,make_test_df):
+        test_input = make_test_df
+        expected = make_test_df.to_json()
+        assert convert_df_to_json(test_input) == expected
+    def test_to_json_non_mutation(self,make_test_df):
+        test_input = make_test_df.copy()
+        convert_df_to_json(test_input)
+        pd.testing.assert_frame_equal(
+            test_input,
+            make_test_df,
+            check_dtype=True
+        )
 
     def test_invalid_df_raises_exception(self):
         pass

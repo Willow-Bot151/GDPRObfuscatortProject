@@ -8,7 +8,7 @@ data "archive_file" "obfuscator_lambda_file" {
 data "archive_file" "dependencies" {
   type = "zip"
   output_file_mode = "0666"
-  source_dir = "../dependencies"
+  source_dir = "../dependency_layer"
   output_path = "../python.zip"
 }
 
@@ -20,7 +20,10 @@ resource "aws_lambda_function" "obfuscator_lambda" {
     runtime = "python3.11"       
     timeout = 60
     source_code_hash = data.archive_file.obfuscator_lambda_file.output_base64sha256
-    layers = [aws_lambda_layer_version.dependancies_layer.arn]
+    layers = [
+      aws_lambda_layer_version.dependancies_layer.arn,
+      "arn:aws:lambda:eu-west-2:336392948345:layer:AWSSDKPandas-Python311:19"
+      ]
 }
 
 resource "aws_lambda_layer_version" "dependancies_layer" {

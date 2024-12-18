@@ -3,6 +3,8 @@ import pandas as pd
 import botocore
 from io import StringIO, BytesIO
 
+def lambda_handler():
+    pass
 
 def Obfuscator(JSON_string):
     input_info = json.loads(JSON_string)
@@ -91,47 +93,79 @@ def create_bucket(bucket_name, data_dict, client):
     for k in data_dict:
         client.put_object(Bucket=bucket_name, Key=k, Body=json.dumps(data_dict[k]))
 
+def convert_csv_to_df(file:str):
+    csv_string = StringIO(file)
+    try:
+        df = pd.read_csv(csv_string, sep=",", header=None)
+    except ValueError as e:
+        raise ValueError("ensure string or bytestream is valid parquet, csv or json format")
+    return df
 
-def convert_format_to_df(file, format):
-    """
-    This function will convert a json, csv, or parquet format string to a dataframe.
+def convert_json_to_df(file:str):
+    json_string = StringIO(file)
+    try:
+        df = pd.read_json(json_string)
+        return df
+    except Exception as e:
+        raise Exception(
+            "failed to convert json string to dataframe, please ensure string is valid json."
+        ) from e
 
-    Parameters:
-        - formatted_string
-            A string in csv, json or parquet format.
-            An expression of a data table.
-        - format
-            "csv", "json" or "parquet"
-            The format of the string.
-    Returns:
-        - A pandas dataframe containing the dataset from the input data table.
-    """
-    if format == "csv":
-        try:
-            csv_string = StringIO(file)
-            df = pd.read_csv(csv_string, sep=",", header=None)
-            return df
-        except Exception as e:
-            raise Exception(
-                "failed to convert csv string to dataframe, please ensure string is valid csv."
-            ) from e
+def convert_parquet_to_df(file:bytes):
+    parquet_bytestream =  BytesIO(file)
+    try:  
+        df = pd.read_parquet(parquet_bytestream)
+        return df
+    except TypeError as e:
+        raise TypeError("input must be parquet file") from e
 
-    elif format == "json":
-        try:
-            pass
-        except:
-            pass
-    elif format == "parquet":
-        try:
-            parquet_bytestream =  BytesIO(file)
-            df = pd.read_parquet(parquet_bytestream)
-            return df
-        except :
-            pass
-    else:
-        raise ValueError(
-            'format arguement is invalid, format can be "csv","json" or "parquet"'
-        )
+# def convert_format_to_df(file, format):
+#     """
+#     This function will convert a json, csv, or parquet format string to a dataframe.
+
+#     Parameters:
+#         - formatted_string
+#             A string in csv, json or parquet format.
+#             An expression of a data table.
+#         - format
+#             "csv", "json" or "parquet"
+#             The format of the string.
+#     Returns:
+#         - A pandas dataframe containing the dataset from the input data table.
+#     """
+#     if format == "csv":
+#         try:
+#             csv_string = StringIO(file)
+#             try:
+#                 df = pd.read_csv(csv_string, sep=",", header=None)
+#             except ValueError as e:
+#                 raise ValueError("ensure string or bytestream is valid parquet, csv or json format")
+#             return df
+#         except Exception as e:
+#             raise Exception(
+#                 "failed to convert csv string to dataframe, please ensure string is valid csv."
+#             ) from e
+
+#     elif format == "json":
+#         try:
+#             json_string = StringIO(file)
+#             df = pd.read_json(json_string)
+#             return df
+#         except Exception as e:
+#             raise Exception(
+#                 "failed to convert json string to dataframe, please ensure string is valid json."
+#             ) from e
+#     elif format == "parquet":
+#         try:
+#             parquet_bytestream =  BytesIO(file)
+#             df = pd.read_parquet(parquet_bytestream)
+#             return df
+#         except TypeError as e:
+#             raise TypeError("input must be parquet file") from e
+#     else:
+#         raise ValueError(
+#             'format arguement is invalid, format can be "csv","json" or "parquet"'
+#         )
 
 
 def format_validator(formatted_string):
@@ -146,7 +180,15 @@ def format_validator(formatted_string):
         - A string representing the format of the input formatted string.
         - Will be "csv", "json" or "parquet"
     """
-    pass
+    if isinstance(formatted_string,str):
+        try:
+            pass
+        except:
+            if isinstance(formatted_string,bytes):
+                try:
+                    pass
+                except:
+                    pass
 
 
 def convert_df_to_formatted_string(df, format):
@@ -165,3 +207,21 @@ def convert_df_to_formatted_string(df, format):
     """
     pass
     print("hi")
+
+def convert_df_to_csv(df):
+    try:
+        return df.to_csv()
+    except Exception as e:
+        raise e
+
+def convert_df_to_json(df):
+    try:
+        return df.to_json()
+    except Exception as e:
+        raise e
+
+def convert_df_to_parquet(df):
+    try:
+        return df.to_parquet()
+    except Exception as e:
+        raise e
