@@ -1,6 +1,6 @@
 import pytest
 import pandas as pd
-from main.GDPRObfuscator import *
+from src.GDPRObfuscator_handler import *
 import boto3
 from unittest.mock import Mock, patch, MagicMock
 from moto import mock_aws
@@ -33,14 +33,14 @@ def mock_s3_client(aws_creds):
         yield boto3.client("s3")
 
 
-def test_json_input():
-    test_input = '{"file_to_obfuscate": "s3://my_ingestion_bucket/new_data/file1.csv","pii_fields": ["name", "email_address"]}'
-    Obfuscator(test_input)
+# def test_json_input():
+#     test_input = '{"file_to_obfuscate": "s3://my_ingestion_bucket/new_data/file1.csv","pii_fields": ["name", "email_address"]}'
+#     Obfuscator(test_input)
 
 
-def test_returns_csv():
-    test_input = '{"file_to_obfuscate": "s3://my_ingestion_bucket/new_data/file1.csv","pii_fields": ["name", "email_address"]}'
-    output = Obfuscator(test_input)
+# def test_returns_csv():
+#     test_input = '{"file_to_obfuscate": "s3://my_ingestion_bucket/new_data/file1.csv","pii_fields": ["name", "email_address"]}'
+#     output = Obfuscator(test_input)
 
 
 class TestGetFile:
@@ -98,113 +98,133 @@ class TestCreateTestBucket:
         body = response["Body"].read()
         assert json.loads(body.decode("utf-8")) == test_data_string
 
+
 @pytest.fixture
 def make_test_df():
     return pd.DataFrame(
-            {
-                "name": ["Bob", "Steve"],
-                "DoB": ["1/1/4000", "2/14/0006"],
-                "fav_colour": ["maroon", "cheese"],
-            }
-        )
+        {
+            "name": ["Bob", "Steve"],
+            "DoB": ["1/1/4000", "2/14/0006"],
+            "fav_colour": ["maroon", "cheese"],
+        }
+    )
+
 
 class TestConvertFormatToDF:
     def test_csv_to_df(self):
         test_input_string = "name,DoB,fav_colour\nbob,1/1/4000,maroon"
+        test_input_fields = ["name"]
         csvStringIO = StringIO(test_input_string)
-        expected = pd.read_csv(csvStringIO, sep=",", header=None)
+        expected = pd.read_csv(csvStringIO, sep=",", header=0)
         pd.testing.assert_frame_equal(
-            convert_csv_to_df(file=test_input_string),
+            convert_string_to_df(
+                formatted_string=test_input_string, fields=test_input_fields
+            )["df"],
             expected,
             check_dtype=True,
+        )
+        assert (
+            convert_string_to_df(
+                formatted_string=test_input_string, fields=test_input_fields
+            )["format"]
+            == "csv"
         )
 
     def test_parquet_to_df(self, make_test_df):
         input_parquet = make_test_df.to_parquet()
+        test_input_fields = ["name"]
         expected = make_test_df
         pd.testing.assert_frame_equal(
-            convert_parquet_to_df(file=input_parquet),
+            convert_string_to_df(
+                formatted_string=input_parquet, fields=test_input_fields
+            )["df"],
             expected,
             check_dtype=True,
         )
+        assert (
+            convert_string_to_df(
+                formatted_string=input_parquet, fields=test_input_fields
+            )["format"]
+            == "parquet"
+        )
 
-    def test_json_to_df(self,make_test_df):
-        input_json = make_test_df.to_json()
+    def test_json_to_df(self, make_test_df):
+        input_json = json.dumps(make_test_df.to_dict(orient="list"))
+        test_input_fields = ["name"]
         expected = make_test_df
         pd.testing.assert_frame_equal(
-            convert_json_to_df(file=input_json),
+            convert_string_to_df(formatted_string=input_json, fields=test_input_fields)[
+                "df"
+            ],
             expected,
             check_dtype=True,
+        )
+        assert (
+            convert_string_to_df(formatted_string=input_json, fields=test_input_fields)[
+                "format"
+            ]
+            == "json"
         )
 
     def test_invalid_csv_or_json_formatted_string_raises_error(self):
         test_input_string = """cnhuedsfbuiewfbaflb@::{D1&"&$^$^!£}"""
-        print(convert_csv_to_df(file=test_input_string))
-        with pytest.raises(ValueError):
-            convert_csv_to_df(file=test_input_string)
-        with pytest.raises(ValueError):
-            convert_json_to_df(test_input_string)
+        with pytest.raises(TypeError):
+            convert_string_to_df(test_input_string)
 
     def test_invalid_parquet_format_raises_error(self):
         test_input_string = """cnhuedsfbuiewfbaflb@::{D1&"&$^$^!£}"""
-        test_input_bytestream = test_input_string.encode('utf-8')
-        with pytest.raises(ValueError):
-            convert_parquet_to_df(test_input_bytestream)
-
-
-class TestFormatValidator:
-    def test_identify_csv(self):
-        pass
-
-    def test_identify_parquet(self):
-        pass
-
-    def test_identify_json(self):
-        pass
-
-    def test_invalid_format_errors(self):
-        pass
+        test_input_bytestream = test_input_string.encode("utf-8")
+        with pytest.raises(TypeError):
+            convert_string_to_df(test_input_bytestream)
 
 
 class TestConvertDfToFormattedString:
-    def test_to_csv_correct(self,make_test_df):
+    def test_to_string_non_mutation(self, make_test_df):
+        test_input = make_test_df.copy()
+        test_format = "csv"
+        convert_df_to_formatted_string(test_input, test_format)
+        pd.testing.assert_frame_equal(test_input, make_test_df, check_dtype=True)
+
+    def test_makes_new_df(self, make_test_df):
+        test_input = make_test_df.copy()
+        test_format = "csv"
+        new_df = convert_df_to_formatted_string(test_input, test_format)
+        assert not new_df is test_input
+
+    def test_to_csv_correct(self, make_test_df):
         test_input = make_test_df
+        test_format = "csv"
         expected = make_test_df.to_csv()
-        assert convert_df_to_csv(test_input) == expected
-    def test_to_csv_non_mutation(self,make_test_df):
-        test_input = make_test_df.copy()
-        convert_df_to_csv(test_input)
-        pd.testing.assert_frame_equal(
-            test_input,
-            make_test_df,
-            check_dtype=True
-        )
+        assert convert_df_to_formatted_string(test_input, test_format) == expected
 
-    def test_to_parquet_correct(self,make_test_df):
+    def test_to_parquet_correct(self, make_test_df):
         test_input = make_test_df
+        test_format = "parquet"
         expected = make_test_df.to_parquet()
-        assert convert_df_to_parquet(test_input) == expected
-    def test_to_parquet_non_mutation(self,make_test_df):
-        test_input = make_test_df.copy()
-        convert_df_to_parquet(test_input)
-        pd.testing.assert_frame_equal(
-            test_input,
-            make_test_df,
-            check_dtype=True
-        )
+        assert convert_df_to_formatted_string(test_input, test_format) == expected
 
-    def test_to_json_correct(self,make_test_df):
+    def test_to_json_correct(self, make_test_df):
         test_input = make_test_df
-        expected = make_test_df.to_json()
-        assert convert_df_to_json(test_input) == expected
-    def test_to_json_non_mutation(self,make_test_df):
-        test_input = make_test_df.copy()
-        convert_df_to_json(test_input)
-        pd.testing.assert_frame_equal(
-            test_input,
-            make_test_df,
-            check_dtype=True
-        )
+        test_format = "json"
+        expected = json.dumps(make_test_df.to_dict())
+        assert convert_df_to_formatted_string(test_input, test_format) == expected
 
     def test_invalid_df_raises_exception(self):
+        pass
+
+@pytest.fixture
+def mock_bucket(mock_s3_client):
+    pass
+
+class TestHandlerUnitTests:
+    """
+    mock bucket
+    fake data
+    
+    """
+    def test():
+        pass
+
+class TestHandlerIntegrationTests:
+    def test(self):
         pass

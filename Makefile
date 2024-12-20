@@ -70,7 +70,7 @@ security-test:
 ## Run the black code check
 run-black:
 	$(call execute_in_env, find ./test/ -name '*.py' -exec black {} +)
-	$(call execute_in_env, find ./main/ -name '*.py' -exec black {} +)
+	$(call execute_in_env, find ./src/ -name '*.py' -exec black {} +)
 
 ## Run the unit tests
 unit-test:
@@ -78,6 +78,6 @@ unit-test:
 
 ## Run the coverage check
 check-coverage:
-	$(call execute_in_env, PYTHONPATH=${PYTHONPATH} pytest --cov=main/GDPRObfuscator/ test/)
+	$(call execute_in_env, PYTHONPATH=${PYTHONPATH} pytest --cov=src/ test/)
 ## Run all checks
 run-checks: security-test run-black unit-test check-coverage

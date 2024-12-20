@@ -1,7 +1,7 @@
 data "archive_file" "obfuscator_lambda_file" {
   type        = "zip"
   output_file_mode = "0666"
-  source_dir = "../main/"   
+  source_dir = "../src/"   
   output_path = "../terraform/deploy.zip"          
 }
 
@@ -13,10 +13,10 @@ data "archive_file" "dependencies" {
 }
 
 resource "aws_lambda_function" "obfuscator_lambda" {
-    function_name = "obfuscator_lambda"
+    function_name = "Obfuscator_lambda"
     filename = "deploy.zip"
     role = aws_iam_role.lambda_role.arn
-    handler = "GDPRObfuscator.lambda_handler"       
+    handler = "GDPRObfuscator_handler.lambda_handler"       
     runtime = "python3.11"       
     timeout = 60
     source_code_hash = data.archive_file.obfuscator_lambda_file.output_base64sha256
